@@ -1,0 +1,78 @@
+import argparse
+import gitlab
+from github import Github
+import os
+
+def backup_gitlab(gitlab_token: str, gitlab_backup_dir: str):
+    gl = gitlab.Gitlab('https://gitlab.com', private_token=gitlab_token)
+    max_projects_in_page = 20;
+
+    page = 1;
+    while True:
+        projects = gl.projects.list(owned=True, page = page)
+        projects_count = len( projects)
+        if projects_count > 0:
+            print( '----------------------page: %d ' % page)
+            page += 1
+
+            for project in projects:
+                print( '----------------------')
+                print( "id: %d " % project.id)
+                print( "url: " + project.http_url_to_repo)
+                print( "ssh: " + project.ssh_url_to_repo)
+                print( "name: " + project.name)
+                print( "namespace path: " + project.namespace['full_path'])
+                print( "path with namespace: " + project.path_with_namespace)
+                local_git_path = gitlab_backup_dir + '/' + project.path_with_namespace + ".git"
+                local_namespace_path = gitlab_backup_dir  + '/' + project.namespace['full_path']
+                if not os.path.exists( local_namespace_path):
+                    os.makedirs( local_namespace_path)
+                if not os.path.exists(local_git_path):
+                    print("Create backup for " + project.http_url_to_repo)
+                    os.system("git clone --mirror " + project.ssh_url_to_repo + " " + local_git_path)
+                else:
+                    print("Update backup for " + project.http_url_to_repo)
+                    os.system("git --git-dir=" + local_git_path + " remote update")
+
+        if projects_count < max_projects_in_page:
+            break;
+
+    pass
+
+def backup_github(github_token: str, github_backup_dir: str):
+    g = Github(github_token)
+    projects = g.get_user().get_repos();
+    for project in projects:
+        print( '----------------------')
+        print( "id: %d " % project.id)
+        print( "url: " + project.html_url)
+        print( "ssh: " + project.git_url)
+        print( "name: " + project.name)
+        print( "namespace path: " + project.owner.login)
+        print( "path with namespace: " + project.full_name)
+        local_git_path = github_backup_dir + '/' + project.full_name + ".git"
+        local_namespace_path = github_backup_dir  + '/' + project.owner.login
+        if not os.path.exists( local_namespace_path):
+            os.makedirs( local_namespace_path)
+        if not os.path.exists(local_git_path):
+            print("Create backup for " + project.html_url)
+            os.system("git clone --mirror " + project.git_url + " " + local_git_path)
+        else:
+            print("Update backup for " + project.html_url)
+            os.system("git --git-dir=" + local_git_path + " remote update")
+    pass
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--gitlab_token", help="the private token of your GitLab profile")
+    parser.add_argument("--gitlab_backup_dir", help="the directory where repositories will be backup")
+    parser.add_argument("--github_token", help="the private token of your GitHub profile")
+    parser.add_argument("--github_backup_dir", help="the directory where repositories will be backup")
+    args = parser.parse_args()
+
+    if args.gitlab_token and args.gitlab_backup_dir:
+        backup_gitlab( args.gitlab_token, args.gitlab_backup_dir)
+
+    if args.github_token and args.github_backup_dir:
+        backup_github( args.github_token, args.github_backup_dir)
