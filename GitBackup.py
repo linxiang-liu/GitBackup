@@ -46,7 +46,7 @@ def backup_github(github_token: str, github_backup_dir: str):
         print( '----------------------')
         print( "id: %d " % project.id)
         print( "url: " + project.html_url)
-        print( "ssh: " + project.git_url)
+        print( "ssh: " + project.ssh_url)
         print( "name: " + project.name)
         print( "namespace path: " + project.owner.login)
         print( "path with namespace: " + project.full_name)
@@ -56,7 +56,7 @@ def backup_github(github_token: str, github_backup_dir: str):
             os.makedirs( local_namespace_path)
         if not os.path.exists(local_git_path):
             print("Create backup for " + project.html_url)
-            os.system("git clone --mirror " + project.git_url + " " + local_git_path)
+            os.system("git clone --mirror " + project.ssh_url + " " + local_git_path)
         else:
             print("Update backup for " + project.html_url)
             os.system("git --git-dir=" + local_git_path + " remote update")
