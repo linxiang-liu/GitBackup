@@ -3,6 +3,14 @@ import gitlab
 from github import Github
 import os
 
+def backup_git_project(local_git_path, http_url, ssh_url):
+    if not os.path.exists(local_git_path):
+        print("Create backup for " + http_url)
+        os.system("git clone --mirror " + ssh_url + " " + local_git_path)
+    else:
+        print("Update backup for " + http_url)
+        os.system("git --git-dir=" + local_git_path + " remote update")
+
 def backup_gitlab(gitlab_token: str, gitlab_backup_dir: str):
     gl = gitlab.Gitlab('https://gitlab.com', private_token=gitlab_token)
     max_projects_in_page = 20;
@@ -27,12 +35,7 @@ def backup_gitlab(gitlab_token: str, gitlab_backup_dir: str):
                 local_namespace_path = gitlab_backup_dir  + '/' + project.namespace['full_path']
                 if not os.path.exists( local_namespace_path):
                     os.makedirs( local_namespace_path)
-                if not os.path.exists(local_git_path):
-                    print("Create backup for " + project.http_url_to_repo)
-                    os.system("git clone --mirror " + project.ssh_url_to_repo + " " + local_git_path)
-                else:
-                    print("Update backup for " + project.http_url_to_repo)
-                    os.system("git --git-dir=" + local_git_path + " remote update")
+                backup_git_project( local_git_path, project.http_url_to_repo, project.ssh_url_to_repo)
 
         if projects_count < max_projects_in_page:
             break;
@@ -54,12 +57,7 @@ def backup_github(github_token: str, github_backup_dir: str):
         local_namespace_path = github_backup_dir  + '/' + project.owner.login
         if not os.path.exists( local_namespace_path):
             os.makedirs( local_namespace_path)
-        if not os.path.exists(local_git_path):
-            print("Create backup for " + project.html_url)
-            os.system("git clone --mirror " + project.ssh_url + " " + local_git_path)
-        else:
-            print("Update backup for " + project.html_url)
-            os.system("git --git-dir=" + local_git_path + " remote update")
+        backup_git_project( local_git_path, project.html_url, project.ssh_url)
     pass
 
 
